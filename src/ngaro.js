@@ -16,6 +16,7 @@
   var   FB_HEIGHT     =    480;         /* Canvas Height              */
   var   FB_EXISTS     =     -1;         /* Is Canvas Present?         */
 
+  // should probabably have separate files for the two canvas types...
 
 
 /**********************************************************************
@@ -212,6 +213,7 @@ var inputMethod = 1;
 var lastKey = " ";
 var tib = "";
 
+
 function rxReadKeyboard(e)
 {
   var uni = e.keyCode ? e.keyCode : e.charCode;
@@ -242,55 +244,6 @@ function rxProcessInput()
 
 
 
-/**********************************************************************
- * Console Output
- *
- * We use a <div> with an id of "output" as the simulated terminal
- * window. The output is cached in a variable (rxOutputCache) and is
- * updated periodically.
- *
- * Output is wrapped to TERM_WIDTH. The width is tracked by a variable
- * (width), and is reset after each wrapping.
- **********************************************************************/
-var rxOutputCache;
-
-function rxDisplayCharacter(c)
-{
-  fbText.save();
-  var lineHeight = 16;
-  fbText.strokeStyle = "white";
-  if (c != 10)
-  {
-    fbText.drawString(String.fromCharCode(c), Terminus12, fb_x, fb_y)
-    fb_x += 8;
-    if (fb_x >= FB_WIDTH)
-    {
-      fb_x = 0;
-      fb_y += lineHeight;
-    }
-  }
-  else
-  {
-    fb_x = 0;
-    fb_y += lineHeight;
-  }
-  if (c < 0)
-  {
-    rxClearCanvas();
-    fb_x = 0;
-    fb_y = lineHeight;
-  }
-  if (fb_y >= (FB_HEIGHT - lineHeight))
-  {
-    rxOutputCache = fbText.getImageData(0, lineHeight, FB_WIDTH, FB_HEIGHT);
-    fbText.clearRect(0, 0, FB_WIDTH, FB_HEIGHT);
-    fbText.putImageData(rxOutputCache, 0, 0);
-    fb_x = 0;
-    fb_y -= lineHeight;
-  }
-  fbText.restore();
-}
-
 
 
 /**********************************************************************
@@ -299,6 +252,12 @@ function rxDisplayCharacter(c)
  * Functions for loading a saved image, saving the image, and restoring
  * to a clean image are here.
  **********************************************************************/
+
+function rxClearCanvas()
+{
+    ngterm.cls();
+}
+
 function rxLoadImage()
 {
   rxClearCanvas();
@@ -361,11 +320,9 @@ function rxLoadCleanImage()
  * Canvas and Mouse devices are handled via a handler in canvas.js
  * currently.
  **********************************************************************/
-portHandlers[2] = function()
-{
-  rxDisplayCharacter(data.pop());
-  ports[2] = 0;
-}
+
+// portHandler[ 2 ] is down by handler 8, since they're both part
+// of the enhanced text terminal
 
 portHandlers[4] = function()
 {
@@ -375,33 +332,28 @@ portHandlers[4] = function()
 
 portHandlers[5] = function()
 {
-  if (ports[5] == -1)
-    ports[5] = IMAGE_SIZE;
-  if (ports[5] == -2)
-    ports[5] = FB_EXISTS;
-  if (ports[5] == -3)
-    ports[5] = FB_WIDTH;
-  if (ports[5] == -4)
-    ports[5] = FB_HEIGHT;
-  if (ports[5] == -5)
-    ports[5] = data.depth();
-  if (ports[5] == -6)
-    ports[5] = address.depth();
-  if (ports[5] == -7)
-    ports[5] = -1;
-  if (ports[5] == -8)
+  switch ( ports[ 5 ])
   {
-    var foo = new Date;
-    var unixtime_ms = foo.getTime();
-    var unixtime = parseInt(unixtime_ms / 1000);
-    ports[5] = unixtime;
+    case -1 : ports[5] = IMAGE_SIZE; break;
+    case -2 : ports[5] = FB_EXISTS; break;
+    case -3 : ports[5] = FB_WIDTH; break;
+    case -4 : ports[5] = FB_HEIGHT; break;
+    case -5 : ports[5] = data.depth(); break;
+    case -6 : ports[5] = address.depth(); break;
+    case -7 : ports[5] = -1; break;
+    case -8 : 
+    {
+      var foo = new Date;
+      var unixtime_ms = foo.getTime();
+      var unixtime = parseInt(unixtime_ms / 1000);
+      ports[5] = unixtime;
+    }; break;
+    case -9  : ports[5] = 0; break;
+    case -11 : ports[5] = TERM_WIDTH; break;
+    case -12 : ports[5] = TERM_HEIGHT; break;
+
+    //case -15 : ports[5] = 1; break;
   }
-  if (ports[5] == -9)
-    ports[5] = 0;
-  if (ports[5] == -11)
-    ports[5] = TERM_WIDTH;
-  if (ports[5] == -12)
-    ports[5] = TERM_HEIGHT;
 }
 
 function handleDevices()
@@ -696,9 +648,14 @@ instructions[vm.WAIT] = function()
 function processOpcode()
 {
   var op = image[ip];
+
   if (op <= vm.WAIT)
   {
-    instructions[op]();
+     if (op != vm.JUMP)
+     {
+     //    console.log( "ip:" + ip + " op:" + op + " ports[ 0 ]:" + ports[ 0 ] );
+     }
+     instructions[op]();
   }
   else
   {
@@ -805,149 +762,99 @@ portHandlers[7] = function()
   }
 }
 
-
-
-/**********************************************************************
- * Canvas Support
- **********************************************************************/
-var fb, fbraw, fbText, fbTextRaw, fb_x, fb_y;
-
-function rxClearCanvas()
-{
-  fb.clearRect(0, 0, FB_WIDTH, FB_HEIGHT);
-  fbText.clearRect(0, 0, FB_WIDTH, FB_HEIGHT);
-  fb_x = 0;
-  fb_y = 0;
-}
-
-function rxPrepareCanvas(t, d)
-{
-  fbTextRaw = document.getElementById(t);
-  fbText = fbTextRaw.getContext("2d");
-
-  fbraw = document.getElementById(d);
-  fb = fbraw.getContext("2d");
-  rxClearCanvas();
-  TERM_WIDTH  = Math.floor(FB_WIDTH / 8);
-  TERM_HEIGHT = Math.floor(FB_HEIGHT / 16);
-}
-
-function rxCanvasSetColor(c)
-{
-  if (c == 0)
-    fb.fillStyle = "black";
-  if (c == 1)
-    fb.fillStyle = "darkblue";
-  if (c == 2)
-    fb.fillStyle = "darkgreen";
-  if (c == 3)
-    fb.fillStyle = "darkcyan";
-  if (c == 4)
-    fb.fillStyle = "darkred";
-  if (c == 5)
-    fb.fillStyle = "purple";
-  if (c == 6)
-    fb.fillStyle = "brown";
-  if (c == 7)
-    fb.fillStyle = "darkgray";
-  if (c == 8)
-    fb.fillStyle = "gray";
-  if (c == 9)
-    fb.fillStyle = "blue";
-  if (c == 10)
-    fb.fillStyle = "green";
-  if (c == 11)
-    fb.fillStyle = "cyan";
-  if (c == 12)
-    fb.fillStyle = "red";
-  if (c == 13)
-    fb.fillStyle = "magenta";
-  if (c == 14)
-    fb.fillStyle = "yellow";
-  if (c == 15)
-    fb.fillStyle = "white";
-  if (c < 0 || c > 15)
-    fb.fillStyle = "black";
-}
-
 portHandlers[6] = function()
 {
-  if (ports[6] == 1)
+  switch (ports[6])
   {
-    rxCanvasSetColor(data.pop());
-    ports[6] = 0;
+    case 1:
+      rxCanvasSetColor(data.pop());
+      break;
+    case 2:
+      var x, y;
+      y = data.pop();
+      x = data.pop();
+      fb.fillRect(x, y, 2, 2);
+      break;
+    case 3:
+      var x, y, h, w;
+      w = data.pop();
+      h = data.pop();
+      y = data.pop();
+      x = data.pop();
+      fb.strokeRect(x, y, w, h);
+      break;
+    case 4:
+      var x, y, h, w;
+      w = data.pop();
+      h = data.pop();
+      y = data.pop();
+      x = data.pop();
+      fb.fillRect(x, y, w, h);
+      break;
+    case 5:
+      var x, y, h;
+      h = data.pop();
+      y = data.pop();
+      x = data.pop();
+      fb.fillRect(x, y, 2, h);
+      break;
+    case 6:
+      var x, y, w;
+      w = data.pop();
+      y = data.pop();
+      x = data.pop();
+      fb.fillRect(x, y, w, 2);
+      break;
+    case 7:
+      var x, y, w;
+      w = data.pop();
+      y = data.pop();
+      x = data.pop();
+      fb.beginPath();
+      fb.arc(x, y, w, 0, Math.PI*2, true);
+      fb.closePath();
+      fb.stroke();
+      break;
+    case 8:
+      var x, y, w;
+      w = data.pop();
+      y = data.pop();
+      x = data.pop();
+      fb.beginPath();
+      fb.arc(x, y, w, 0, Math.PI*2, true);
+      fb.closePath();
+      fb.fill();
+      break;
+    default:
+      // do nothing
   }
-  if (ports[6] == 2)
-  {
-    var x, y;
-    y = data.pop();
-    x = data.pop();
-    fb.fillRect(x, y, 2, 2);
-    ports[6] = 0;
-  }
-  if (ports[6] == 3)
-  {
-    var x, y, h, w;
-    w = data.pop();
-    h = data.pop();
-    y = data.pop();
-    x = data.pop();
-    fb.strokeRect(x, y, w, h);
-    ports[6] = 0;
-  }
-  if (ports[6] == 4)
-  {
-    var x, y, h, w;
-    w = data.pop();
-    h = data.pop();
-    y = data.pop();
-    x = data.pop();
-    fb.fillRect(x, y, w, h);
-    ports[6] = 0;
-  }
-  if (ports[6] == 5)
-  {
-    var x, y, h;
-    h = data.pop();
-    y = data.pop();
-    x = data.pop();
-    fb.fillRect(x, y, 2, h);
-    ports[6] = 0;
-  }
-  if (ports[6] == 6)
-  {
-    var x, y, w;
-    w = data.pop();
-    y = data.pop();
-    x = data.pop();
-    fb.fillRect(x, y, w, 2);
-    ports[6] = 0;
-  }
-  if (ports[6] == 7)
-  {
-    var x, y, w;
-    w = data.pop();
-    y = data.pop();
-    x = data.pop();
-    fb.beginPath();
-    fb.arc(x, y, w, 0, Math.PI*2, true);
-    fb.closePath();
-    fb.stroke();
-    ports[6] = 0;
-  }
-  if (ports[6] == 8)
-  {
-    var x, y, w;
-    w = data.pop();
-    y = data.pop();
-    x = data.pop();
-    fb.beginPath();
-    fb.arc(x, y, w, 0, Math.PI*2, true);
-    fb.closePath();
-    fb.fill();
-    ports[6] = 0;
-  }
+  ports[6] = 0;
 }
+
+
+
+// enhanced text device : ngterm.js
+
+ngterm = new Term( new Canvas( 80 * FONT_WIDTH, 30 * FONT_HEIGHT ));
+
+portHandlers[2] = function()
+{
+    ngterm.emit( data.pop() );
+    ports[ 2 ] = 0;
+}
+
+portHandlers[ 8 ] = function( )
+{
+    switch ( ports[ 8 ])
+    {
+        case 1 : ngterm.cursto( data.pop(), data.pop() ); break;
+        case 2 : ngterm.fg( data.pop() ); break;
+        case 3 : ngterm.bg( data.pop() ); break;
+        default: // ignore
+    }
+    ports[ 8 ] = 0;
+}
+
 
 
 

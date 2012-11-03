@@ -1,0 +1,54 @@
+<!doctype html>
+<html>
+<head>
+  <title>ngaro terminal</title>
+  <meta charset="UTF-8" />
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+  <script type="text/javascript" src="src/ngterm.js"></script>
+  <script type="text/javascript" src="src/ngaro.js"></script>
+  <script type="text/javascript" src="src/retroImage.js"></script>
+  <style type="text/css">
+    html
+    {
+      background : #333;
+    }
+    #ngterm, #pre-text
+    {
+       width:640px;
+       margin:auto;
+       padding: 16px;
+    }
+    #ngterm
+    {
+      background: #999;
+      height:480px;
+    }
+    #pre-text
+    {
+      font-style: italic;
+      color: #181818;
+    }
+  </style>
+</head>
+<body>
+  <div id="ngterm"><!-- console gets generated here --></div>
+  <script type="text/javascript">
+
+    // this is just how jquery says, "do something when the page loads"
+    $( function() {
+
+      // here, we're telling jquery to take the canvas
+      // that ngarojs creates and stick it inside the
+      // DIV above. ( The one with the message. )
+      $( "#ngterm" ).append( $( ngterm.canvas ));
+
+
+      rxLoadCleanImage();
+      rxPrepareVM();
+      rxToggleInputMethod();
+      rxStartVM();
+
+    });
+  </script>
+</body>
+</html>
