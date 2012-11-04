@@ -1,24 +1,22 @@
 /**********************************************************************
  * Ngaro Virtual Machine
  * Copyright (C) 2008 - 2011, Charles Childers
+ * Copyright (C) 2012       , Michal J Wallace
  **********************************************************************/
 
-
+
 /**********************************************************************
  * Some constants useful to us for dealing with the VM settings.
  **********************************************************************/
   var   IMAGE_SIZE    = 256000;         /* Amount of simulated RAM    */
   var   DATA_DEPTH    =    128;         /* Depth of data stack        */
-  var   ADDRESS_DEPTH =   1000;         /* Depth of the stacks        */
+  var   ADDRESS_DEPTH =   1000;         /* Depth of call stack        */
   var   TERM_WIDTH    =     79;         /* Width of virtual terminal  */
   var   TERM_HEIGHT   =     18;         /* Height of virtual terminal */
   var   FB_WIDTH      =    640;         /* Canvas Width               */
   var   FB_HEIGHT     =    480;         /* Canvas Height              */
   var   FB_EXISTS     =     -1;         /* Is Canvas Present?         */
-
-  // should probabably have separate files for the two canvas types...
-
-
+
 /**********************************************************************
  * Stack object. Provides an easy way to create and work with LIFO
  * stacks.
@@ -43,7 +41,7 @@ function Stack(size)
   this.reset = function()  { this.sp = 0; }
 }
 
-
+
 /**********************************************************************
  * Symbolic constants for each instruction.
  **********************************************************************/
@@ -63,7 +61,7 @@ function Opcodes()
 }
 
 
-
+
 /**********************************************************************
  * Internal registers, flags, and variables
  **********************************************************************/
@@ -79,7 +77,7 @@ var vm = new Opcodes();
 
 var instructions = new Array(vm.WAIT);
 
-
+
 /**********************************************************************
  * Control (and fine tuning) of the VM Processing
  *
@@ -195,7 +193,7 @@ function rxPrepareVM()
 }
 
 
-
+
 /**********************************************************************
  * Keyboard Handling
  *
@@ -245,7 +243,7 @@ function rxProcessInput()
 
 
 
-
+
 /**********************************************************************
  * Image Management
  *
@@ -304,7 +302,7 @@ function rxLoadCleanImage()
 }
 
 
-
+
 /**********************************************************************
  * Simulated Device Handlers
  *
@@ -399,7 +397,7 @@ function handleDevices()
 }
 
 
-
+
 /**********************************************************************
  * The Opcode Processor
  *
@@ -708,7 +706,7 @@ function rxProcessImage()
 }
 
 
-
+
 /**********************************************************************
  * Mouse / Touch Support
  **********************************************************************/
@@ -747,6 +745,7 @@ document.onmousemove = moveMouse;
 document.touchstart = setButton;
 document.touchend = releaseButton;
 
+
 portHandlers[7] = function()
 {
   if (ports[7] == 1)
@@ -762,6 +761,7 @@ portHandlers[7] = function()
   }
 }
 
+
 portHandlers[6] = function()
 {
   switch (ports[6])
@@ -832,7 +832,7 @@ portHandlers[6] = function()
 }
 
 
-
+
 // enhanced text device : ngterm.js
 
 ngterm = new Term( new Canvas( 80 * FONT_WIDTH, 30 * FONT_HEIGHT ));
@@ -843,6 +843,7 @@ portHandlers[2] = function()
     ports[ 2 ] = 0;
 }
 
+
 portHandlers[ 8 ] = function( )
 {
     switch ( ports[ 8 ])
@@ -857,7 +858,7 @@ portHandlers[ 8 ] = function( )
 
 
 
-
+
 /**********************************************************************
  * Save and/or Run A Project
  **********************************************************************/
@@ -897,7 +898,7 @@ function rxNewProject()
   document.getElementById('project').value = "";
 }
 
-
+
 /**********************************************************************
  * Misc. Other Routines
  **********************************************************************/
