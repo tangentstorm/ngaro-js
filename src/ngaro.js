@@ -3,6 +3,8 @@
  * Copyright (C) 2008 - 2011, Charles Childers
  * Copyright (C) 2012       , Michal J Wallace
  **********************************************************************/
+var WEB_CONTEXT = typeof document != "undefined";
+
 
 
 /**********************************************************************
@@ -104,7 +106,7 @@ for ( var i = 0; i < 64; ++i )
  *
  * You can start or suspend execution with rxStartVM() and rxStopVM().
  * The state can be toggled via rxToggleVM().
- **********************************************************************/
+**********************************************************************/
 var interval;
 var frequency = 75;
 var cycles    = 5000;
@@ -129,43 +131,48 @@ function rxToggleVM()
   if (run == 0)
   {
     rxStartVM();
-    document.getElementById("vmtoggle").value = "pause vm";
+    if ( WEB_CONTEXT )
+      document.getElementById("vmtoggle").value = "pause vm";
   }
   else
   {
     rxStopVM();
-    document.getElementById("vmtoggle").value = "resume vm";
+    if ( WEB_CONTEXT )
+      document.getElementById("vmtoggle").value = "resume vm";
   }
 }
 
-function rxSetInterval()
+if ( WEB_CONTEXT )
 {
-  rxStopVM();
-  frequency = document.getElementById('frequency').value;
-  try
+  function rxSetInterval()
   {
-    localStorage.setItem("rxFrequency", frequency);
+    rxStopVM();
+    frequency = document.getElementById('frequency').value;
+    try
+    {
+      localStorage.setItem("rxFrequency", frequency);
+    }
+    catch (e)
+    {
+      alert("Sorry, but we couldn't save the frequency settings for later use.");
+    }
+    rxStartVM();
   }
-  catch (e)
-  {
-    alert("Sorry, but we couldn't save the frequency settings for later use.");
-  }
-  rxStartVM();
-}
 
-function rxSetCyclesPerInterval()
-{
-  rxStopVM();
-  cycles = document.getElementById('cycles').value;
-  try
+  function rxSetCyclesPerInterval()
   {
-    localStorage.setItem("rxCycles", cycles);
+    rxStopVM();
+    cycles = document.getElementById('cycles').value;
+    try
+    {
+      localStorage.setItem("rxCycles", cycles);
+    }
+    catch (e)
+    {
+      alert("Sorry, but we couldn't save the cycle settings for later   use.");
+    }
+    rxStartVM();
   }
-  catch (e)
-  {
-    alert("Sorry, but we couldn't save the cycle settings for later use.");
-  }
-  rxStartVM();
 }
 
 function rxPrepareVM()
@@ -183,10 +190,13 @@ function rxPrepareVM()
   address.reset();
 
   frequency = localStorage.getItem("rxFrequency") || 75
-  document.getElementById("frequency").value = frequency;
-
   cycles = localStorage.getItem("rxCycles") || 5000;
-  document.getElementById("cycles").value = cycles;
+
+  if ( WEB_CONTEXT )
+  {
+    document.getElementById("frequency").value = frequency;
+    document.getElementById("cycles").value = cycles;
+  }
 }
 
 
@@ -696,56 +706,59 @@ function rxProcessImage()
 /**********************************************************************
  * Mouse / Touch Support
  **********************************************************************/
-var mx, my, mb;
-
-function moveMouse(e)
+if ( typeof document != "undefined" )
 {
-  if (e.offsetX)
+  var mx, my, mb;
+
+  document.onmousedown = function (e)
   {
-    mx = e.offsetX;
-    my = e.offsetY;
-  }
-  else if (e.layerX)
+    mb = 1;
+    return true;
+  };
+
+  document.onmousemove = function (e)
   {
-    mx = e.layerX;
-    my = e.layerY;
+    if (e.offsetX)
+    {
+      mx = e.offsetX;
+      my = e.offsetY;
+    }
+    else if (e.layerX)
+    {
+      mx = e.layerX;
+      my = e.layerY;
+    }
+    return true;
   }
-  return true;
+
+  document.onmouseup = function (e)
+  {
+    mb = 0;
+    return true;
+  }
+
+  // touchscreen / tablet support:
+  document.touchstart = document.onmousedown;
+  document.touchend = document.onmouseup;
+
+  // mouse handler port
+  portHandlers[7] = function()
+  {
+    if (ports[7] == 1)
+    {
+      data.push(mx);
+      data.push(my);
+      ports[7] = 0;
+    }
+    if (ports[7] == 2)
+    {
+      data.push(mb);
+      ports[7] = 0;
+    }
+  }
+
 }
 
-function setButton(e)
-{
-  mb = 1;
-  return true;
-}
-
-function releaseButton(e)
-{
-  mb = 0;
-  return true;
-}
-
-document.onmousedown = setButton;
-document.onmouseup = releaseButton;
-document.onmousemove = moveMouse;
-document.touchstart = setButton;
-document.touchend = releaseButton;
-
-
-portHandlers[7] = function()
-{
-  if (ports[7] == 1)
-  {
-    data.push(mx);
-    data.push(my);
-    ports[7] = 0;
-  }
-  if (ports[7] == 2)
-  {
-    data.push(mb);
-    ports[7] = 0;
-  }
-}
 
 
 portHandlers[6] = function()
@@ -821,17 +834,20 @@ portHandlers[6] = function()
 
 // enhanced text device : ngterm.js
 
-ngterm = new Term( new Canvas( 80 * FONT_WIDTH, 30 * FONT_HEIGHT ));
-
-portHandlers[2] = function()
+if ( WEB_CONTEXT )
 {
-  ngterm.emit( data.pop() );
-  ports[ 2 ] = 0;
-}
+  ngterm = new Term( new Canvas( 80 * FONT_WIDTH, 30 * FONT_HEIGHT ));
 
-
-portHandlers[ 8 ] = function( )
-{
+  // normal output device:
+  portHandlers[2] = function()
+  {
+    ngterm.emit( data.pop() );
+    ports[ 2 ] = 0;
+  }
+
+  // enhanced text:
+  portHandlers[ 8 ] = function( )
+  {
     switch ( ports[ 8 ])
     {
         case 1 : ngterm.cursto( data.pop(), data.pop() ); break;
@@ -840,60 +856,67 @@ portHandlers[ 8 ] = function( )
         default: // ignore
     }
     ports[ 8 ] = 0;
+  }
 }
-
 
 
 
 /**********************************************************************
  * Save and/or Run A Project
  **********************************************************************/
-function rxSaveProject()
-{
-  var project = "rx_project";
-  try
-  {
-    localStorage.setItem(project, document.getElementById('project').value);
-  }
-  catch (e)
-  {
-    alert("Sorry, but we couldn't save your project.");
-  }
-}
 
-function rxLoadSavedProject()
+if ( WEB_CONTEXT )
 {
-  var project = "rx_project";
-  if (localStorage.getItem(project) === null)
+  function rxSaveProject()
+  {
+    var project = "rx_project";
+    try
+    {
+      localStorage.setItem(project, document.getElementById('project').value);
+    }
+    catch (e)
+    {
+      alert("Sorry, but we couldn't save your project.");
+    }
+  }
+  
+  function rxLoadSavedProject()
+  {
+    var project = "rx_project";
+    if (localStorage.getItem(project) === null)
+    {
+      document.getElementById('project').value = "";
+    }
+    else
+    {
+      document.getElementById('project').value = localStorage[project];
+    }
+  }
+
+  function rxRunProject()
+  {
+    tib += document.getElementById('project').value + "  ";
+  }
+  
+  function rxNewProject()
   {
     document.getElementById('project').value = "";
   }
-  else
-  {
-    document.getElementById('project').value = localStorage[project];
-  }
-}
-
-function rxRunProject()
-{
-  tib += document.getElementById('project').value + "  ";
-}
-
-function rxNewProject()
-{
-  document.getElementById('project').value = "";
 }
 
 
 /**********************************************************************
  * Misc. Other Routines
  **********************************************************************/
-function toggleVisibilityOf(id)
-{
-  var e = document.getElementById(id);
-  if (e.style.display == 'block')
-    e.style.display = 'none';
-  else
-    e.style.display = 'block';
-}
 
+if ( WEB_CONTEXT )
+{
+  function toggleVisibilityOf(id)
+  {
+    var e = document.getElementById(id);
+    if (e.style.display == 'block')
+      e.style.display = 'none';
+    else
+      e.style.display = 'block';
+  }
+}
