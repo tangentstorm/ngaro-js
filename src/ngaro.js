@@ -264,7 +264,7 @@ function rxLoadImage()
   tib = "";
   try
   {
-    image = localStorage['retroImage'].split(';').map(function(x){return parseInt(x)});
+    image = localStorage['retroImage'].split(';').map( parseInt );
   }
   catch (e)
   {
