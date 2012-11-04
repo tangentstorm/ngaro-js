@@ -74,8 +74,17 @@ var portHandlers = new Array(64);
 var image   = new Array(IMAGE_SIZE);
 var vm = new Opcodes();
 
-
 var instructions = new Array(vm.WAIT);
+
+
+// start with no hardware attached.
+// ( devices are filled in below )
+var doNothingHandler = function () { }
+for ( var i = 0; i < 64; ++i )
+{
+  portHandlers[ i ] = doNothingHandler;
+}
+
 
 
 /**********************************************************************
@@ -220,17 +229,40 @@ function rxReadKeyboard(e)
     return false;
 }
 
+
+// this version just uses the keyboard
+function kbdDirectMethod()
+{ 
+  var res = lastKey;
+  lastKey = 0;
+  return res;
+}
+
+// this version uses an html form
+function kbdWidgetMethod()
+{ 
+  var res = tib.charCodeAt( 0 );
+  tib = tib.substr(1, tib.length - 1);
+  lastKey = 0;
+  return res;
+}
+
+// set up the keyboard handler
+portHandlers[ 1 ] = kbdWidgetMethod;
+
 function rxToggleInputMethod()
 {
-  if (inputMethod == 0)
+  if ( inputMethod == 0 )
   {
     document.onkeypress = null;
     inputMethod = 1;
+    portHandlers[ 1 ] = kbdWidgetMethod;
   }
   else
   {
     document.onkeypress = rxReadKeyboard;
     inputMethod = 0;
+    portHandlers[ 1 ] = kbdDirectMethod;
   }
 }
 
@@ -354,48 +386,15 @@ portHandlers[5] = function()
   }
 }
 
+
 function handleDevices()
 {
-  if (ports[0] != 0)
-    return;
-
-  ports[0] = 1;
-
-  /* Input */
-  if (ports[1] == 1 && inputMethod == 0)
-  {
-    ports[1] = lastKey;
-    lastKey = 0;
-    return;
-  }
-  if (ports[1] == 1 && inputMethod == 1)
-  {
-    ports[1] = tib.charCodeAt(0);
-    tib = tib.substr(1, tib.length - 1);
-    lastKey = 0;
-    return;
-  }
-
-  if (ports[2] == 1)
-  {
-    if (typeof portHandlers[2] == 'function')
-      portHandlers[2]();
-    return;
-  }
-
-  for (var a = 4; a < 64; a++)
-  {
-    if (ports[a] != 0)
-    {
-      if (typeof portHandlers[a] == 'function')
-      {
-        portHandlers[a]();
-        return;
-      }
-    }
+  ports[ 0 ] = 1;
+  for ( var i = 1;  i < 64 && ports[ i ] == 0; i++ ) { }
+  if ( i < 64 ) {
+    ports[ i ] = portHandlers[ i ]( ) || 0;
   }
 }
-
 
 
 /**********************************************************************
@@ -651,7 +650,6 @@ function processOpcode()
   {
      if (op != vm.JUMP)
      {
-     //    console.log( "ip:" + ip + " op:" + op + " ports[ 0 ]:" + ports[ 0 ] );
      }
      instructions[op]();
   }
@@ -839,8 +837,8 @@ ngterm = new Term( new Canvas( 80 * FONT_WIDTH, 30 * FONT_HEIGHT ));
 
 portHandlers[2] = function()
 {
-    ngterm.emit( data.pop() );
-    ports[ 2 ] = 0;
+  ngterm.emit( data.pop() );
+  ports[ 2 ] = 0;
 }
 
 
