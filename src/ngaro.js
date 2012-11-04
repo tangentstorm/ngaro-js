@@ -79,6 +79,7 @@ var instructions = new Array(vm.WAIT);
 
 // start with no hardware attached.
 // ( devices are filled in below )
+//  TODO: move this loop to rxPrepareVM
 var doNothingHandler = function () { }
 for ( var i = 0; i < 64; ++i )
 {
@@ -181,24 +182,11 @@ function rxPrepareVM()
   data.reset();
   address.reset();
 
-  if (localStorage.getItem("rxFrequency") === null)
-  {
-    frequency = 75;
-  }
-  else
-  {
-    frequency = localStorage['rxFrequency'];
-    document.getElementById('frequency').value = frequency;
-  }
-  if (localStorage.getItem("rxCycles") === null)
-  {
-    cycles = 5000;
-  }
-  else
-  {
-    cycles = localStorage['rxCycles'];
-    document.getElementById('cycles').value = cycles;
-  }
+  frequency = localStorage.getItem("rxFrequency") || 75
+  document.getElementById("frequency").value = frequency;
+
+  cycles = localStorage.getItem("rxCycles") || 5000;
+  document.getElementById("cycles").value = cycles;
 }
 
 

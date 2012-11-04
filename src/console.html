@@ -32,6 +32,16 @@
 </head>
 <body>
   <div id="ngterm"><!-- console gets generated here --></div>
+  <form style="display:none">
+    <p>Process up to 
+      <input id="cycles" value="5000"
+	     onBlur="javascript:rxSetCyclesPerInterval()" />
+      instructions every
+      <input id="frequency" value="75"
+	     onBlur="javascript:rxSetInterval()" />
+      milliseconds.</p>
+  </form>
+
   <script type="text/javascript">
 
     // this is just how jquery says, "do something when the page loads"
