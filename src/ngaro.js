@@ -26,7 +26,7 @@ var WEB_CONTEXT = typeof document != "undefined";
 function Stack(size)
 {
   this.sp    = 0;
-  this.data  = new Array(size);
+  this.data  = new Int32Array(size);
   this.push  = function(n) { this.sp++; this.data[this.sp] = n; }
   this.pop   = function()  { return this.data[this.sp--]; }
   this.depth = function()  { return this.sp; }
@@ -70,10 +70,10 @@ function Opcodes()
 var ip = 0;
 var data    = new Stack(DATA_DEPTH);
 var address = new Stack(ADDRESS_DEPTH);
-var ports   = new Array(64);
-var portHandlers = new Array(64);
+var ports   = new Int32Array(64);
+var portHandlers = new Array(64); // array of functions
 
-var image   = new Array(IMAGE_SIZE);
+var image   = new Int32Array(IMAGE_SIZE);
 var vm = new Opcodes();
 
 var instructions = new Array(vm.WAIT);
