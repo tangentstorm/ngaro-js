@@ -113,6 +113,7 @@ var frequency;
 var cycles;
 var RUNNING = false;
 var WAITING = false; // awaiting keyboard input
+//  TODO : this is a delay, not a frequency
 var DEFAULT_FREQUENCY = 25;
 var DEFAULT_CYCLES = 50000;
 
