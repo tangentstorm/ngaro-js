@@ -18,6 +18,7 @@ var WEB_CONTEXT = typeof document != "undefined";
   var   FB_WIDTH      =    640;         /* Canvas Width               */
   var   FB_HEIGHT     =    480;         /* Canvas Height              */
   var   FB_EXISTS     =     -1;         /* Is Canvas Present?         */
+
 
 /**********************************************************************
  * Stack object. Provides an easy way to create and work with LIFO
@@ -73,10 +74,10 @@ var address = new Stack(ADDRESS_DEPTH);
 var ports   = new Int32Array(64);
 var portHandlers = new Array(64); // array of functions
 
-var image   = new Int32Array(IMAGE_SIZE);
+var image   = new Int32Array( IMAGE_SIZE );
 var vm = new Opcodes();
 
-var instructions = new Array(vm.WAIT);
+
 
 
 // start with no hardware attached.
@@ -108,9 +109,12 @@ for ( var i = 0; i < 64; ++i )
  * The state can be toggled via rxToggleVM().
 **********************************************************************/
 var interval;
-var frequency = 75;
-var cycles    = 5000;
-var run = 0;
+var frequency;
+var cycles;
+var RUNNING = false;
+var WAITING = false; // awaiting keyboard input
+var DEFAULT_FREQUENCY = 25;
+var DEFAULT_CYCLES = 50000;
 
 function rxStartVM()
 {
@@ -189,8 +193,8 @@ function rxPrepareVM()
   data.reset();
   address.reset();
 
-  frequency = localStorage.getItem("rxFrequency") || 75
-  cycles = localStorage.getItem("rxCycles") || 5000;
+  frequency = localStorage.getItem("rxFrequency") || DEFAULT_FREQUENCY;
+  cycles = localStorage.getItem("rxCycles") || DEFAULT_CYCLES;
 
   if ( WEB_CONTEXT )
   {
@@ -225,20 +229,22 @@ function rxReadKeyboard(e)
   lastKey = uni;
   if (uni == 8)
     return false;
+  else {
+    WAITING = false;
+    ports[ 1 ] = uni;
+  }
 }
 
 
 // this version just uses the keyboard
 function kbdDirectMethod()
-{ 
-  var res = lastKey;
-  lastKey = 0;
-  return res;
+{
+  WAITING = true;
 }
 
 // this version uses an html form
 function kbdWidgetMethod()
-{ 
+{
   var res = tib.charCodeAt( 0 );
   tib = tib.substr(1, tib.length - 1);
   lastKey = 0;
@@ -294,7 +300,7 @@ function rxLoadImage()
   tib = "";
   try
   {
-    image = localStorage['retroImage'].split(';').map( parseInt );
+    image.set( localStorage['retroImage'].split(';').map( parseInt ));
   }
   catch (e)
   {
@@ -369,7 +375,7 @@ portHandlers[5] = function()
     case -5 : ports[5] = data.depth(); break;
     case -6 : ports[5] = address.depth(); break;
     case -7 : ports[5] = -1; break;
-    case -8 : 
+    case -8 :
     {
       var foo = new Date;
       var unixtime_ms = foo.getTime();
@@ -404,259 +410,231 @@ function handleDevices()
  * See "The Ngaro Virtual Machine" for details on the behavior of each
  * instruction.
  **********************************************************************/
-instructions[vm.NOP] = function() { }
-
-instructions[vm.LIT] = function()
-{
-  ip++;
-  data.push(image[ip]);
-}
-
-instructions[vm.DUP] = function()
-{
-  data.dup();
-}
-
-instructions[vm.DROP] = function()
-{
-  data.drop();
-}
-
-instructions[vm.SWAP] = function()
-{
-  data.swap();
-}
-
-instructions[vm.PUSH] = function()
-{
-  address.push(data.pop());
-}
-
-instructions[vm.POP] = function()
-{
-  data.push(address.pop())
-}
-
-instructions[vm.LOOP] = function()
-{
-  data.dec();
-  if (data.tos() != 0)
-  {
-    ip++;
-    ip = image[ip] - 1;
-  }
-  else
-  {
-    ip++;
-    data.drop();
-  }
-}
-
-instructions[vm.JUMP] = function()
-{
-  ip++;
-  ip = image[ip] - 1;
-  if (image[ip + 1] == 0) ip++;
-  if (image[ip + 1] == 0) ip++;
-}
-
-instructions[vm.RETURN] = function()
-{
-  ip = address.pop();
-  if (image[ip + 1] == 0) ip++;
-  if (image[ip + 1] == 0) ip++;
-}
-
-instructions[vm.GT_JUMP] = function()
-{
-  ip++;
-  if (data.nos() > data.tos())
-    ip = image[ip] - 1;
-  data.drop();
-  data.drop();
-}
-
-instructions[vm.LT_JUMP] = function()
-{
-  ip++;
-  if (data.nos() < data.tos())
-    ip = image[ip] - 1;
-  data.drop();
-  data.drop();
-}
-
-instructions[vm.NE_JUMP] = function()
-{
-  ip++;
-  if (data.nos() != data.tos())
-    ip = image[ip] - 1;
-  data.drop();
-  data.drop();
-}
-
-instructions[vm.EQ_JUMP] = function()
-{
-  ip++;
-  if (data.nos() == data.tos())
-    ip = image[ip] - 1;
-  data.drop();
-  data.drop();
-}
-
-instructions[vm.FETCH] = function()
-{
-  x = data.pop();
-  data.push(image[x]);
-}
-
-instructions[vm.STORE] = function()
-{
-  image[data.tos()] = data.nos();
-  data.drop();
-  data.drop();
-}
-
-instructions[vm.ADD] = function()
-{
-  var x = data.pop();
-  var y = data.pop();
-  data.push(x + y);
-}
-
-instructions[vm.SUB] = function()
-{
-  var x = data.pop();
-  var y = data.pop();
-  data.push(y - x);
-}
-
-instructions[vm.MUL] = function()
-{
-  var x = data.pop();
-  var y = data.pop();
-  data.push(y * x);
-}
-
-instructions[vm.DIVMOD] = function()
-{
-  var b = data.pop();
-  var a = data.pop();
-  if (b == 0)
-  {
-    ip = 0;
-    data.sp = 0;
-    address.sp = 0;
-  }
-  else
-  {
-    var x = Math.abs(b);
-    var y = Math.abs(a);
-    var q = Math.floor(y / x);
-    var r = y % x;
-    if (a < 0 && b < 0)
-      r = r * -1;
-    if (a > 0 && b < 0)
-      q = q * -1;
-    if (a < 0 && b > 0)
-    {
-      r = r * -1;
-      q = q * -1;
-    }
-    data.push(r);
-    data.push(q);
-  }
-}
-
-instructions[vm.AND] = function()
-{
-  var x = data.pop();
-  var y = data.pop();
-  data.push(x & y);
-}
-
-instructions[vm.OR] = function()
-{
-  var x = data.pop();
-  var y = data.pop();
-  data.push(x | y);
-}
-
-instructions[vm.XOR] = function()
-{
-  var x = data.pop();
-  var y = data.pop();
-  data.push(x ^ y);
-}
-
-instructions[vm.SHL] = function()
-{
-  var x = data.pop();
-  var y = data.pop();
-  data.push(y << x);
-}
-
-instructions[vm.SHR] = function()
-{
-  var x = data.pop();
-  var y = data.pop();
-  data.push(y >>= x);
-}
-
-instructions[vm.ZERO_EXIT] = function()
-{
-  if (data.tos() == 0)
-  {
-    data.drop();
-    ip = address.pop();
-  }
-}
-
-instructions[vm.INC] = function()
-{
-  data.inc();
-}
-
-instructions[vm.DEC] = function()
-{
-  data.dec();
-}
-
-instructions[vm.IN] = function()
-{
-  var x = data.pop();
-  data.push(ports[x]);
-  ports[x] = 0;
-}
-
-instructions[vm.OUT] = function()
-{
-  var x = data.pop();
-  var y = data.pop();
-  ports[x] = y;
-}
-
-instructions[vm.WAIT] = function()
-{
-  handleDevices();
-}
 
 function processOpcode()
 {
   var op = image[ip];
 
-  if (op <= vm.WAIT)
-  {
-     if (op != vm.JUMP)
-     {
-     }
-     instructions[op]();
-  }
-  else
+  if (op > vm.WAIT)
   {
     address.push(ip);
     ip = op - 1;
     if (image[ip + 1] == 0) ip++;
     if (image[ip + 1] == 0) ip++;
+  }
+  else switch( op )
+  {
+    case vm.NOP :
+    break;
+
+    case vm.LIT :
+      ip++;
+      data.push(image[ip]);
+    break;
+
+    case vm.DUP :
+      data.dup();
+    break;
+
+    case vm.DROP :
+      data.drop();
+    break;
+
+    case vm.SWAP :
+      data.swap();
+    break;
+
+    case vm.PUSH :
+      address.push(data.pop());
+    break;
+
+    case vm.POP :
+      data.push(address.pop())
+    break;
+
+    case vm.LOOP :
+      data.dec();
+      if (data.tos() != 0)
+      {
+        ip++;
+        ip = image[ip] - 1;
+      }
+      else
+      {
+        ip++;
+        data.drop();
+      }
+    break;
+
+    case vm.JUMP :
+      ip++;
+      ip = image[ip] - 1;
+      if (image[ip + 1] == 0) ip++;
+      if (image[ip + 1] == 0) ip++;
+    break;
+
+    case vm.RETURN :
+      ip = address.pop();
+      if (image[ip + 1] == 0) ip++;
+      if (image[ip + 1] == 0) ip++;
+    break;
+
+    case vm.GT_JUMP :
+      ip++;
+      if (data.nos() > data.tos())
+        ip = image[ip] - 1;
+      data.drop();
+      data.drop();
+    break;
+
+    case vm.LT_JUMP :
+      ip++;
+      if (data.nos() < data.tos())
+        ip = image[ip] - 1;
+      data.drop();
+      data.drop();
+    break;
+
+    case vm.NE_JUMP :
+      ip++;
+      if (data.nos() != data.tos())
+        ip = image[ip] - 1;
+      data.drop();
+      data.drop();
+    break;
+
+    case vm.EQ_JUMP :
+      ip++;
+      if (data.nos() == data.tos())
+        ip = image[ip] - 1;
+      data.drop();
+      data.drop();
+    break;
+
+    case vm.FETCH :
+      var x = data.pop();
+      data.push(image[x]);
+    break;
+
+    case vm.STORE :
+      image[data.tos()] = data.nos();
+      data.drop();
+      data.drop();
+    break;
+
+    case vm.ADD :
+      var x = data.pop();
+      var y = data.pop();
+      data.push(x + y);
+    break;
+
+    case vm.SUB :
+      var x = data.pop();
+      var y = data.pop();
+      data.push(y - x);
+    break;
+
+    case vm.MUL :
+      var x = data.pop();
+      var y = data.pop();
+      data.push(y * x);
+    break;
+
+    case vm.DIVMOD :
+      var b = data.pop();
+      var a = data.pop();
+      if (b == 0)
+      {
+        ip = 0;
+        data.sp = 0;
+        address.sp = 0;
+      }
+      else
+      {
+        var x = Math.abs(b);
+        var y = Math.abs(a);
+        var q = Math.floor(y / x);
+        var r = y % x;
+        if (a < 0 && b < 0)
+          r = r * -1;
+        if (a > 0 && b < 0)
+          q = q * -1;
+        if (a < 0 && b > 0)
+        {
+          r = r * -1;
+          q = q * -1;
+        }
+        data.push(r);
+        data.push(q);
+      }
+    break;
+
+    case vm.AND :
+      var x = data.pop();
+      var y = data.pop();
+      data.push(x & y);
+    break;
+
+    case vm.OR :
+      var x = data.pop();
+      var y = data.pop();
+      data.push(x | y);
+    break;
+
+    case vm.XOR :
+      var x = data.pop();
+      var y = data.pop();
+      data.push(x ^ y);
+    break;
+
+    case vm.SHL :
+      var x = data.pop();
+      var y = data.pop();
+      data.push(y << x);
+    break;
+
+    case vm.SHR :
+      var x = data.pop();
+      var y = data.pop();
+      data.push(y >>= x);
+    break;
+
+    case vm.ZERO_EXIT :
+      if (data.tos() == 0)
+      {
+        data.drop();
+        ip = address.pop();
+      }
+    break;
+
+    case vm.INC :
+      data.inc();
+    break;
+
+    case vm.DEC :
+      data.dec();
+    break;
+
+    case vm.IN :
+      var x = data.pop();
+      data.push(ports[x]);
+      ports[x] = 0;
+    break;
+
+    case vm.OUT :
+      var x = data.pop();
+      var y = data.pop();
+      ports[x] = y;
+    break;
+
+    case vm.WAIT :
+      handleDevices();
+    break;
+
+    default :
+       debugger; // would only happen on negative numbers...
+       alert( "unrecognized opcode: " + op );
+    break;
   }
   ip++;
   checkStack();
@@ -686,19 +664,13 @@ function checkStack()
 
 function rxProcessImage()
 {
-  if (run == 0)
+  if (WAITING || RUNNING)
     return;
 
-  run = 0;
-
-  if (inputMethod == 0)
-    for (var a = cycles; a > 0; a--)
-      processOpcode();
-  else
-    for (var a = cycles; a > 0 && tib != ""; a--)
-      processOpcode();
-
-  run = 1;
+  RUNNING = true;
+  for (var a = cycles; a > 0 && (! WAITING ); a--)
+    processOpcode();
+  RUNNING = false;
 }
 
 
@@ -879,7 +851,7 @@ if ( WEB_CONTEXT )
       alert("Sorry, but we couldn't save your project.");
     }
   }
-  
+
   function rxLoadSavedProject()
   {
     var project = "rx_project";
@@ -897,7 +869,7 @@ if ( WEB_CONTEXT )
   {
     tib += document.getElementById('project').value + "  ";
   }
-  
+
   function rxNewProject()
   {
     document.getElementById('project').value = "";
