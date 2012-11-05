@@ -20,7 +20,7 @@
 // ----------------------------------------------------------
 
 var term,
-    font, 
+    VGAFont,
     FONT_WIDTH  = 8,
     FONT_HEIGHT = 16,
 
@@ -50,38 +50,45 @@ var term,
         return canvas;
     }
 
-    function Term(canvas) {
+    function Term( canvas, font ) {
 
         // Canvas
-        this.canvas  = canvas; 
+        this.canvas  = canvas;
         this.context = this.canvas.getContext('2d');
-        this.image_data  = this.context.createImageData(8, 16);
+
 
         // Position
         this.column     = 1;
         this.row        = 1;
         this.scrollback = 0;
 
+        // buffer to hold a character as its being drawn
+        this.charw = 8
+        this.charh = 16
+        this.chardata = this.context.createImageData( this.charw, this.charh )
+        this.charview  = new DataView( this.chardata.data.buffer )
+        this.font = font
+
         // Graphic mode
         this.foreground = WHITE;
         this.background = BLACK;
         this.palette = [
-            [  0,   0,   0, 255],  // Black
-            [170,   0,   0, 255],  // Red
-            [  0, 170,   0, 255],  // Green
-            [170,  85,   0, 255],  // Yellow (brown)
-            [  0,   0, 170, 255],  // Blue
-            [170,   0, 170, 255],  // Magenta
-            [  0, 170, 170, 255],  // Cyan
-            [170, 170, 170, 255],  // White
-            [ 85,  85,  85, 255],  // dark gray
-            [255,  85,  85, 255],  // bright red
-            [ 85, 255,  85, 255],  // bright green
-            [255, 255,  85, 255],  // bright yellow
-            [ 85,  85, 255, 255],  // bright blue
-            [255,  85, 255, 255],  // bright magenta
-            [ 85, 255, 255, 255],  // bright cyan
-            [255, 255, 255, 255]   // bright white
+	      0x000000FF, // black
+	      0xAA0000FF, // red
+	      0x00AA00FF, // green
+	      0xAA5500FF, // brown
+	      0x0000AAFF, // blue
+	      0xAA00AAFF, // magenta
+	      0x00AAAAFF, // cyan
+	      0xAAAAAAFF, // white (light gray)
+	      0x555555FF, // bright black (dark gray)
+	      0xFF5555FF, // bright red
+	      0x55FF55FF, // bright green
+	      0xFFFF55FF, // bright yellow
+	      0x5555FFFF, // bright blue
+	      0xFF55FFFF, // bright magenta
+	      0x55FFFFFF, // bright cyan
+	      0xFFFFFFFF, // bright white
         ];
         return this;
     }
@@ -89,37 +96,33 @@ var term,
     Term.prototype = {
 
         cls: function () {
-            this.context.fillStyle = 
-              'rgba(' + this.palette[ BLACK ].join( ',' ) + ')';
+            this.context.fillStyle = 'rgba( 0, 0, 0, 255 )'
             this.context.fillRect( 0, 0, this.canvas.width, this.canvas.height );
-	    this.row = 1;
-	    this.column = 1;
+            this.row = 1;
+            this.column = 1;
         },
 
-        renderChar: function (charcode) {
+        renderChar: function ( charcode, x, y ) {
            // this basically creates a sprite on the fly
            // based on the current color settings
+           // x and y are pixel coordinates on the canvas
 
-           var data, bitmap, bits, row, col,
-               offset, color, channel,
+           var bitmap, bits, row, col,
+               pixel, color,
                foreground = this.palette[ this.foreground ],
                background = this.palette[ this.background ];
 
-            data   = this.image_data.data;
-            bitmap = font[charcode];
-
-            for (row = 0; row < 16; row++) {
-                bits = bitmap[row] || 0x00;
-                for (col = 7; col >= 0; col--) {
-                    offset = (32 * row) + (4 * col);
-                    color = (bits & 1) ? foreground : background;
-                    for (channel = 0; channel < 4; channel++) {
-                        data[offset + channel] = color[channel];
-                    }
+            bitmap = this.font[ charcode ];
+            for ( row = 0; row < 16; row++ ) {
+                bits = bitmap[ row ] || 0x00;
+                for ( col = 7; col >= 0; col-- ) {
+                    pixel = ( 32 * row ) + ( 4 * col );
+                    color = ( bits & 1 ) ? foreground : background;
+                    this.charview.setUint32( pixel, color );
                     bits >>= 1;
                 }
             }
-            return this.image_data;
+            this.context.putImageData( this.chardata, x, y )
         },
 
         // ansi thinks upper left is 1,1 but what does retroforth think?
@@ -127,9 +130,9 @@ var term,
         emit: function (charCode)
         {
 
-            var CR = 0x0d, LF = 0x0a, BS = 0x08; 
-	    if ( charCode < 0 ) this.cls()
-	    else switch (charCode & 0xff) //  truncate to 8 bits
+            var CR = 0x0d, LF = 0x0a, BS = 0x08;
+            if ( charCode < 0 ) this.cls()
+            else switch (charCode & 0xff) //  truncate to 8 bits
             {
                 case CR:
                     this.column = 0;
@@ -140,26 +143,17 @@ var term,
                     this.row ++;
                     break;
 
-		case BS:
-		    this.column--;
-		    if ( this.column == 1 && this.row > 1 ) {
-			this.column = 79;
-			this.row--;
-		    }
-		    this.context.putImageData(
-                       this.renderChar( 32 ),
-                       this.column * 8,
-                       ( this.row + this.scrollback ) * 16
-                    );
-		    break;
+                case BS:
+                    this.column--;
+                    if ( this.column == 1 && this.row > 1 ) {
+                        this.column = 79;
+                        this.row--;
+                    }
+                    this.renderChar( 32, this.column * 8, this.row * 16 );
+                    break;
 
                 default:
-		    
-                    this.context.putImageData(
-                       this.renderChar(charCode),
-                       this.column * 8,
-                       ( this.row + this.scrollback ) * 16
-                    );
+                    this.renderChar( charCode, this.column * 8, this.row * 16 );
 
                     // As far as i can tell, retro has no concept
                     // of a line ending character, but it does wrap.
@@ -174,7 +168,7 @@ var term,
 
         transparent : function( yn )
         {
-            this.palette[ BLACK ][ 3 ] = yn ? 0 : 0xff ;
+            this.palette[ BLACK ] = yn ? 0 : 0xff ;
         }
 
     }
@@ -186,7 +180,7 @@ var term,
 // by a sixteen-element sub-array, with each element representing a row of
 // pixels.
 
-    font = [
+    VGAFont = [
         [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
         [0x00, 0x00, 0x7e, 0x81, 0xa5, 0x81, 0x81, 0xbd, 0x99, 0x81, 0x81, 0x7e, 0x00, 0x00, 0x00, 0x00],
         [0x00, 0x00, 0x7e, 0xff, 0xdb, 0xff, 0xff, 0xc3, 0xe7, 0xff, 0xff, 0x7e, 0x00, 0x00, 0x00, 0x00],

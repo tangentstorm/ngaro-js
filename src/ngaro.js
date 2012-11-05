@@ -836,7 +836,7 @@ portHandlers[6] = function()
 
 if ( WEB_CONTEXT )
 {
-  ngterm = new Term( new Canvas( 80 * FONT_WIDTH, 30 * FONT_HEIGHT ));
+  ngterm = new Term( new Canvas( 80 * FONT_WIDTH, 30 * FONT_HEIGHT ), VGAFont );
 
   // normal output device:
   portHandlers[2] = function()
