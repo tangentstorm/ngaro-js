@@ -13,9 +13,11 @@
 //    node server.js  # run this file
 //
 var connect = require( 'connect' );
+var path = __dirname + '/src';
+var port = 8080;
 
-
-var app = connect()
-  .use(connect.directory( 'src' ))
-  .use(connect.static( 'src' ))
-  .listen( 8080 );
+connect.createServer(connect.static(path)).listen(port,function(){
+    console.log('Running server at http://localhost:'
+                + port + '/index.html')
+    console.log('Press Ctl-C to stop the server')
+});
