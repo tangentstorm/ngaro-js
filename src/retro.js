@@ -86,6 +86,21 @@ function run(){
     var cells = Math.ceil(fileInfo.size/4);
     console.log(cells);
 
+    var cellArray = new Array();
+    fs.open(imageFile,'r',function(status,fd){
+        if(status){
+            console.log(status);
+            process.exit(1);
+        } 
+        var bufsize = 4;
+        var buffer = new Buffer(bufsize);
+        for (var i = 0; i < cells; i++) {
+            fs.read(fd,buffer,0,bufsize,(bufsize * i),function(err,num){
+                cellArray[i] = buffer.toString();
+            });
+        }
+    });
+
     if(!dump_after){
        //stuff
     } else {
