@@ -5,9 +5,9 @@
  **********************************************************************/
 var WEB_CONTEXT = typeof document != "undefined";
 
-/* Test for node modules */
-exports.hello = function hello() {
-    return 'Hello from Ngaro';
+/* Test for ngaro module */
+function hello() {
+    console.log('Hello from Ngaro');
 }
 
 
@@ -1155,3 +1155,7 @@ if ( WEB_CONTEXT )
       e.style.display = 'block';
   }
 }
+
+/* Exported modules */
+exports.hello = hello;
+exports.rxProcessImage = rxProcessImage;
