@@ -2,6 +2,7 @@
 var ngaro = require('./ngaro.js');
 // node modules
 var fs = require('fs');
+var path = require('path');
 
 //ngaro.setImage(); -will need to add this to ngaro
 //ngaro.rxProcessImage();
@@ -49,6 +50,7 @@ function dump(stack,address,memory){
 function run(){
 
     var imageFile;
+    var imageFileCheck;
     var dump_after = false;
 
     var list = new Array();
@@ -64,8 +66,8 @@ function run(){
         } else if (args === '--image'){
             num++;
             args = process.argv[num];
-            fileCheck = fs.existsSync(args,function(exists){});
-            if(fileCheck){
+            imageFileCheck = fs.existsSync(args,function(exists){});
+            if(imageFileCheck){
                 imageFile = args;
             } else {
                 console.log('File not found');
@@ -74,6 +76,15 @@ function run(){
         }
         num++;
     }
+
+    if(!imageFile) {
+        imageFile = path.resolve(__dirname,'retro-11.5.img');
+    }
+
+    var fileInfo = fs.statSync(imageFile);
+    console.log(fileInfo.size);
+    var cells = Math.ceil(fileInfo.size/4);
+    console.log(cells);
 
     if(!dump_after){
        //stuff
