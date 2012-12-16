@@ -65,7 +65,7 @@ function processor(memory,inputs){
                 stack.append(stack[-1]);
             }
         }
-
+    }
 }
 
 function dump(stack,address,memory){
