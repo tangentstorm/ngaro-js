@@ -1,5 +1,7 @@
 // ngaro module setup
-var ngaro = require( './ngaro.js' );
+var ngaro = require('./ngaro.js');
+// node modules
+var fs = require('fs');
 
 //ngaro.setImage(); -will need to add this to ngaro
 //ngaro.rxProcessImage();
@@ -23,14 +25,11 @@ function rxDivMod(a,b){
         r = r * -1;
     }
 
-    // test divmod
-    console.log('r value= ' + r + ' q value= ' + q);
-
     return [r,q];
 }
 
 function getInputs(inputs){
-
+    
     var a = 0;
     if (inputs[-1] != 0) {
     } 
@@ -49,22 +48,29 @@ function dump(stack,address,memory){
 
 function run(){
 
-    var ImagePath;
+    var imageFile;
     var dump_after = false;
 
-    var inputs = new Array();
-    for (var i = 0; i < 12; i++) {
-        inputs[i] = 0;
-    }
-    inputs.push(0);
-   
+    var list = new Array();
+
     var num = 2;
     while (num < process.argv.length){
         var args = process.argv[num];
-        if (args === '--dump'){
+        if (args === '--with') {
+            num++;
+            //list.append( //file ); 
+        } else if (args === '--dump'){
             dump_after = true;
-        } else {
-            console.log(process.argv[num]);
+        } else if (args === '--image'){
+            num++;
+            args = process.argv[num];
+            fileCheck = fs.existsSync(args,function(exists){});
+            if(fileCheck){
+                imageFile = args;
+            } else {
+                console.log('File not found');
+                process.exit(2);
+            }
         }
         num++;
     }
@@ -72,6 +78,7 @@ function run(){
     if(!dump_after){
        //stuff
     } else {
+       // need to pass arrays to dump
        dump();
     }
 }
