@@ -5,6 +5,10 @@
  **********************************************************************/
 var WEB_CONTEXT = typeof document != "undefined";
 
+/* Test for node modules */
+exports.hello = function hello() {
+    return 'Hello from Ngaro';
+}
 
 
 /**********************************************************************
