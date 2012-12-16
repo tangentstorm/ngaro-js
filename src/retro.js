@@ -1,16 +1,11 @@
-console.log(process.argv);
-// ngaro setup
+// ngaro module setup
 var ngaro = require( './ngaro.js' );
 
-// import functions from ngaro
 //ngaro.setImage(); -will need to add this to ngaro
 //ngaro.rxProcessImage();
 
-// test for ngaro module
-ngaro.hello();
-
-// test divmod
-rxDivMod(25,6);
+// start retro.js
+run();
 
 function rxDivMod(a,b){
 
@@ -43,15 +38,17 @@ function getInputs(inputs){
     return a;
 }
 
-function process(memory,inputs){
+function processor(memory,inputs){
 
 }
 
 function dump(stack,address,memory){
+
     console.log('dump info');
 }
 
 function run(){
+
     var ImagePath;
     var dump_after = false;
 
@@ -61,15 +58,20 @@ function run(){
     }
     inputs.push(0);
    
-    var num = 0;
+    var num = 2;
     while (num < process.argv.length){
         var args = process.argv[num];
-        if (process.argv[num] === '--dump'){
-            dump();
+        if (args === '--dump'){
+            dump_after = true;
         } else {
             console.log(process.argv[num]);
         }
         num++;
     }
-    
+
+    if(!dump_after){
+       //stuff
+    } else {
+       dump();
+    }
 }
