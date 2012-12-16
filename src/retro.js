@@ -32,13 +32,39 @@ function rxDivMod(a,b){
 function getInputs(inputs){
     
     var a = 0;
-    if (inputs[-1] != 0) {
+    if(inputs[-1] != 0){
     } 
 
     return a;
 }
 
 function processor(memory,inputs){
+
+    // set variables
+    var ip = 0;
+    var EXIT = memory.length;
+    var stack = new Array(128);
+    var address = new Array(1024);
+    var ports = new Array(12);
+    var files = new Array(8);
+    
+    while(ip < EXIT){
+        var opcode = memory[ip];
+        
+        if(opcode > 30){
+            //handle opcodes over 30
+        } else {
+            if(opcode === 0){ 
+                //nop
+            } else if (opcode === 1){
+                //lit
+                ip += 1;
+                stack.append(memory[ip]);
+            } else if (opcode === 2){
+                //dup
+                stack.append(stack[-1]);
+            }
+        }
 
 }
 
@@ -97,6 +123,7 @@ function run(){
         for (var i = 0; i < cells; i++) {
             memory[i] = buffer.readInt32LE(i*4);
         }
+        fs.close(fd);
     }
 
     if(!dump_after){
