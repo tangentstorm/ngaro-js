@@ -1,3 +1,4 @@
+console.log(process.argv);
 // ngaro setup
 var ngaro = require( './ngaro.js' );
 
@@ -35,6 +36,11 @@ function rxDivMod(a,b){
 
 function getInputs(inputs){
 
+    var a = 0;
+    if (inputs[-1] != 0) {
+    } 
+
+    return a;
 }
 
 function process(memory,inputs){
@@ -42,9 +48,28 @@ function process(memory,inputs){
 }
 
 function dump(stack,address,memory){
-    console.log('dump');
+    console.log('dump info');
 }
 
 function run(){
+    var ImagePath;
+    var dump_after = false;
 
+    var inputs = new Array();
+    for (var i = 0; i < 12; i++) {
+        inputs[i] = 0;
+    }
+    inputs.push(0);
+   
+    var num = 0;
+    while (num < process.argv.length){
+        var args = process.argv[num];
+        if (process.argv[num] === '--dump'){
+            dump();
+        } else {
+            console.log(process.argv[num]);
+        }
+        num++;
+    }
+    
 }
