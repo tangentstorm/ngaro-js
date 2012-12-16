@@ -86,20 +86,18 @@ function run(){
     var cells = Math.ceil(fileInfo.size/4);
     console.log(cells);
 
-    var cellArray = new Array();
-    fs.open(imageFile,'r',function(status,fd){
-        if(status){
-            console.log(status);
-            process.exit(1);
-        } 
-        var bufsize = 4;
+    var memory = new Array();
+    var fd = fs.openSync(imageFile,'r');
+    if (!fd) {
+        console.log('Unable to open file');
+    } else {
+        var bufsize = cells*4;
         var buffer = new Buffer(bufsize);
+        fs.readSync(fd,buffer,0,bufsize,0);
         for (var i = 0; i < cells; i++) {
-            fs.read(fd,buffer,0,bufsize,(bufsize * i),function(err,num){
-                cellArray[i] = buffer.toString();
-            });
+            memory[i] = buffer.readInt32LE(i*4);
         }
-    });
+    }
 
     if(!dump_after){
        //stuff
