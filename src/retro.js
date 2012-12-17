@@ -23,7 +23,7 @@ function getInputs(inputs){
 
 function dump(){
 
-    var vmImage = convertArray(ngaro.ram);
+    var vmImage = convertArray(ngaro.ram.image);
     console.log(vmImage.join("|"));
     /*var addressArray = convertArray(ngaro.address.data);*/
     //console.log(addressArray.join("|"));
