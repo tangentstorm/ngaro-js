@@ -5,6 +5,8 @@
  **********************************************************************/
 var WEB_CONTEXT = typeof document != "undefined";
 
+// variable for the image,address,and data
+var ram = { image : [] }; 
 
 /**********************************************************************
  * Some constants useful to us for dealing with the VM settings.
@@ -73,7 +75,7 @@ var address = new Stack(ADDRESS_DEPTH);
 var ports   = new Int32Array(64);
 var portHandlers = new Array(64); // array of functions
 
-var image   = new Int32Array( IMAGE_SIZE );
+ram.image   = new Int32Array( IMAGE_SIZE );
 var vm = new Opcodes();
 
 
@@ -312,11 +314,11 @@ var address = new Stack(ADDRESS_DEPTH);
 var ports   = new Int32Array(64);
 var portHandlers = new Array(64); // array of functions
 
-var image   = new Int32Array( IMAGE_SIZE );
+ram.image   = new Int32Array( IMAGE_SIZE );
 var vm = new Opcodes();
 
 function setImage(vmImageArray){
-    image = new Int32Array(vmImageArray); 
+    ram.image = new Int32Array(vmImageArray); 
 }
 
 
@@ -545,7 +547,7 @@ function rxHTTPLoadImage( url )
     if ( raw )
     {
       var ints = new Int32Array( raw );
-      image.set( ints );
+      ram.image.set( ints );
       WAITING = false;
     }
   }
@@ -560,7 +562,7 @@ function rxLoadImage()
   tib = "";
   try
   {
-    image.set( localStorage['retroImage'].split(';').map( parseInt ));
+    ram.image.set( localStorage['retroImage'].split(';').map( parseInt ));
   }
   catch (e)
   {
@@ -576,7 +578,7 @@ function rxSaveImage()
   rxStopVM();
   try
   {
-    localStorage.setItem("retroImage", image.join(";"));
+    localStorage.setItem("retroImage", ram.image.join(";"));
   }
   catch (e)
   {
@@ -673,14 +675,14 @@ function handleDevices()
 
 function processOpcode()
 {
-  var op = image[ip];
+  var op = ram.image[ip];
 
   if (op > vm.WAIT)
   {
     address.push(ip);
     ip = op - 1;
-    if (image[ip + 1] == 0) ip++;
-    if (image[ip + 1] == 0) ip++;
+    if (ram.image[ip + 1] == 0) ip++;
+    if (ram.image[ip + 1] == 0) ip++;
   }
   else switch( op )
   {
@@ -689,7 +691,7 @@ function processOpcode()
 
     case vm.LIT :
       ip++;
-      data.push(image[ip]);
+      data.push(ram.image[ip]);
     break;
 
     case vm.DUP :
@@ -717,7 +719,7 @@ function processOpcode()
       if (data.tos() != 0)
       {
         ip++;
-        ip = image[ip] - 1;
+        ip = ram.image[ip] - 1;
       }
       else
       {
@@ -728,21 +730,21 @@ function processOpcode()
 
     case vm.JUMP :
       ip++;
-      ip = image[ip] - 1;
-      if (image[ip + 1] == 0) ip++;
-      if (image[ip + 1] == 0) ip++;
+      ip = ram.image[ip] - 1;
+      if (ram.image[ip + 1] == 0) ip++;
+      if (ram.image[ip + 1] == 0) ip++;
     break;
 
     case vm.RETURN :
       ip = address.pop();
-      if (image[ip + 1] == 0) ip++;
-      if (image[ip + 1] == 0) ip++;
+      if (ram.image[ip + 1] == 0) ip++;
+      if (ram.image[ip + 1] == 0) ip++;
     break;
 
     case vm.GT_JUMP :
       ip++;
       if (data.nos() > data.tos())
-        ip = image[ip] - 1;
+        ip = ram.image[ip] - 1;
       data.drop();
       data.drop();
     break;
@@ -750,7 +752,7 @@ function processOpcode()
     case vm.LT_JUMP :
       ip++;
       if (data.nos() < data.tos())
-        ip = image[ip] - 1;
+        ip = ram.image[ip] - 1;
       data.drop();
       data.drop();
     break;
@@ -758,7 +760,7 @@ function processOpcode()
     case vm.NE_JUMP :
       ip++;
       if (data.nos() != data.tos())
-        ip = image[ip] - 1;
+        ip = ram.image[ip] - 1;
       data.drop();
       data.drop();
     break;
@@ -766,18 +768,18 @@ function processOpcode()
     case vm.EQ_JUMP :
       ip++;
       if (data.nos() == data.tos())
-        ip = image[ip] - 1;
+        ip = ram.image[ip] - 1;
       data.drop();
       data.drop();
     break;
 
     case vm.FETCH :
       var x = data.pop();
-      data.push(image[x]);
+      data.push(ram.image[x]);
     break;
 
     case vm.STORE :
-      image[data.tos()] = data.nos();
+      ram.image[data.tos()] = data.nos();
       data.drop();
       data.drop();
     break;
@@ -1154,7 +1156,7 @@ if ( WEB_CONTEXT )
 }
 
 /* Exported modules */
-exports.image = image;
+exports.ram = ram;
 exports.address = address;
 exports.data = data;
 exports.setImage = setImage;

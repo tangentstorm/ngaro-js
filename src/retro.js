@@ -23,13 +23,12 @@ function getInputs(inputs){
 
 function dump(){
 
-    //console.log(ngaro.image.join("|"));
-    //var vmImage = convertArray(ngaro.image);
-    //console.log(vmImage.join("|"));
-    var addressArray = convertArray(ngaro.address.data);
-    console.log(addressArray.join("|"));
-    var dataArray = convertArray(ngaro.data.data);
-    console.log(dataArray.join("|"));
+    var vmImage = convertArray(ngaro.ram);
+    console.log(vmImage.join("|"));
+    /*var addressArray = convertArray(ngaro.address.data);*/
+    //console.log(addressArray.join("|"));
+    //var dataArray = convertArray(ngaro.data.data);
+    /*console.log(dataArray.join("|"));*/
 }
 
 function convertArray(typedArray){
