@@ -4,34 +4,23 @@ var ngaro = require('./ngaro.js');
 var fs = require('fs');
 var path = require('path');
 
-//ngaro.setImage(); -will need to add this to ngaro
-//ngaro.rxProcessImage();
-
 // start retro.js
 if (require.main === module) {
     run();
 }
 
-function getInputs(inputs){
-    
-    var a = 0;
-    if(inputs[-1] != 0){
-    } 
-
-    return a;
-}
-
 function dump(){
 
-    var vmImage = convertArray(ngaro.ram.image);
-    console.log(vmImage.join("|"));
-    var addressArray = convertArray(ngaro.address.data);
-    console.log(addressArray.join("|"));
-    var dataArray = convertArray(ngaro.data.data);
-    console.log(dataArray.join("|"));
+    var dumpArray = convertArray(ngaro.ram.image);
+    console.log(dumpArray.join("|"));
+    dumpArray = convertArray(ngaro.address.data);
+    console.log(dumpArray.join("|"));
+    dumpArray = convertArray(ngaro.data.data);
+    console.log(dumpArray.join("|"));
 }
 
 function convertArray(typedArray){
+
     var newArray = [];
     for(var i = 0; i < typedArray.length; i++){
         newArray.push(typedArray[i]);
@@ -44,15 +33,12 @@ function run(){
     var imageFile;
     var imageFileCheck;
     var dump_after = false;
-
-    var list = new Array();
-
     var num = 2;
+
     while (num < process.argv.length){
         var args = process.argv[num];
         if (args === '--with') {
-            num++;
-            //list.append( //file ); 
+            //needs implementation
         } else if (args === '--dump'){
             dump_after = true;
         } else if (args === '--image'){
@@ -75,9 +61,9 @@ function run(){
 
     var fileInfo = fs.statSync(imageFile);
     var cells = Math.ceil(fileInfo.size/4);
-
     var imageArray = new Array();
     var fd = fs.openSync(imageFile,'r');
+
     if (!fd) {
         console.log('Unable to open file');
     } else {
@@ -88,16 +74,13 @@ function run(){
             imageArray[i] = buffer.readInt32LE(i*4);
         }
         fs.close(fd);
-        //ngaro.image = imageArray;
-        
         ngaro.setImage(imageArray);
         ngaro.rxProcessImage();
     }
 
     if(!dump_after){
-       //stuff
+       //do other stuff
     } else {
-       // need to pass arrays to dump
        dump();
     }
 }
