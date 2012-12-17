@@ -12,11 +12,13 @@ if (require.main === module) {
 function dump(){
 
     var dumpArray = convertArray(ngaro.ram.image);
-    console.log(dumpArray.join("|"));
+    console.log(dumpArray.join(String.fromCharCode(28)));
+    console.log(String.fromCharCode(29));
     dumpArray = convertArray(ngaro.address.data);
-    console.log(dumpArray.join("|"));
+    console.log(dumpArray.join(String.fromCharCode(28)));
+    console.log(String.fromCharCode(29));
     dumpArray = convertArray(ngaro.data.data);
-    console.log(dumpArray.join("|"));
+    console.log(dumpArray.join(String.fromCharCode(28)));
 }
 
 function convertArray(typedArray){
