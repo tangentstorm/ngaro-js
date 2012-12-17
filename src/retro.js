@@ -21,9 +21,23 @@ function getInputs(inputs){
     return a;
 }
 
-function dump(stack,address,memory){
+function dump(){
 
-    console.log('dump info');
+    //console.log(ngaro.image.join("|"));
+    //var vmImage = convertArray(ngaro.image);
+    //console.log(vmImage.join("|"));
+    var addressArray = convertArray(ngaro.address.data);
+    console.log(addressArray.join("|"));
+    var dataArray = convertArray(ngaro.data.data);
+    console.log(dataArray.join("|"));
+}
+
+function convertArray(typedArray){
+    var newArray = [];
+    for(var i = 0; i < typedArray.size; i++){
+        newArray.push(typedArray[i]);
+    }
+    return newArray;
 }
 
 function run(){
@@ -61,9 +75,7 @@ function run(){
     }
 
     var fileInfo = fs.statSync(imageFile);
-    console.log(fileInfo.size);
     var cells = Math.ceil(fileInfo.size/4);
-    console.log(cells);
 
     var imageArray = new Array();
     var fd = fs.openSync(imageFile,'r');
@@ -77,7 +89,9 @@ function run(){
             imageArray[i] = buffer.readInt32LE(i*4);
         }
         fs.close(fd);
-        ngaro.image = imageArray;
+        //ngaro.image = imageArray;
+        
+        ngaro.setImage(imageArray);
         ngaro.rxProcessImage();
     }
 

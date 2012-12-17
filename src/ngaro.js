@@ -315,7 +315,9 @@ var portHandlers = new Array(64); // array of functions
 var image   = new Int32Array( IMAGE_SIZE );
 var vm = new Opcodes();
 
-
+function setImage(vmImageArray){
+    image = new Int32Array(vmImageArray); 
+}
 
 
 // start with no hardware attached.
@@ -1153,4 +1155,7 @@ if ( WEB_CONTEXT )
 
 /* Exported modules */
 exports.image = image;
+exports.address = address;
+exports.data = data;
+exports.setImage = setImage;
 exports.rxProcessImage = rxProcessImage;
