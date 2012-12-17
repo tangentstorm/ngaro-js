@@ -25,15 +25,15 @@ function dump(){
 
     var vmImage = convertArray(ngaro.ram.image);
     console.log(vmImage.join("|"));
-    /*var addressArray = convertArray(ngaro.address.data);*/
-    //console.log(addressArray.join("|"));
-    //var dataArray = convertArray(ngaro.data.data);
-    /*console.log(dataArray.join("|"));*/
+    var addressArray = convertArray(ngaro.address.data);
+    console.log(addressArray.join("|"));
+    var dataArray = convertArray(ngaro.data.data);
+    console.log(dataArray.join("|"));
 }
 
 function convertArray(typedArray){
     var newArray = [];
-    for(var i = 0; i < typedArray.size; i++){
+    for(var i = 0; i < typedArray.length; i++){
         newArray.push(typedArray[i]);
     }
     return newArray;
