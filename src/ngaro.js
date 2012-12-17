@@ -5,11 +5,6 @@
  **********************************************************************/
 var WEB_CONTEXT = typeof document != "undefined";
 
-/* Test for ngaro module */
-function hello() {
-    console.log('Hello from Ngaro');
-}
-
 
 /**********************************************************************
  * Some constants useful to us for dealing with the VM settings.
@@ -1157,5 +1152,5 @@ if ( WEB_CONTEXT )
 }
 
 /* Exported modules */
-exports.hello = hello;
+exports.image = image;
 exports.rxProcessImage = rxProcessImage;

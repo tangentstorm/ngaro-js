@@ -65,7 +65,7 @@ function run(){
     var cells = Math.ceil(fileInfo.size/4);
     console.log(cells);
 
-    var memory = new Array();
+    var imageArray = new Array();
     var fd = fs.openSync(imageFile,'r');
     if (!fd) {
         console.log('Unable to open file');
@@ -74,9 +74,11 @@ function run(){
         var buffer = new Buffer(bufsize);
         fs.readSync(fd,buffer,0,bufsize,0);
         for (var i = 0; i < cells; i++) {
-            memory[i] = buffer.readInt32LE(i*4);
+            imageArray[i] = buffer.readInt32LE(i*4);
         }
         fs.close(fd);
+        ngaro.image = imageArray;
+        ngaro.rxProcessImage();
     }
 
     if(!dump_after){
