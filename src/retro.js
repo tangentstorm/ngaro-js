@@ -1,4 +1,4 @@
-// ngaro module setup
+// ngaro module
 var ngaro = require('./ngaro.js');
 // node modules
 var fs = require('fs');
@@ -8,25 +8,8 @@ var path = require('path');
 //ngaro.rxProcessImage();
 
 // start retro.js
-run();
-
-function rxDivMod(a,b){
-
-    var x = Math.abs(a);
-    var y = Math.abs(b);
-    var q = Math.floor(y/x);
-    var r = y % x;
-
-    if(a < 0 && b < 0){
-        r = r * -1;
-    } else if (a > 0 && b < 0){
-        q = q * -1;
-    } else if (a < 0 && b > 0){
-        q = q * -1;
-        r = r * -1;
-    }
-
-    return [r,q];
+if (require.main === module) {
+    run();
 }
 
 function getInputs(inputs){
@@ -36,36 +19,6 @@ function getInputs(inputs){
     } 
 
     return a;
-}
-
-function processor(memory,inputs){
-
-    // set variables
-    var ip = 0;
-    var EXIT = memory.length;
-    var stack = new Array(128);
-    var address = new Array(1024);
-    var ports = new Array(12);
-    var files = new Array(8);
-    
-    while(ip < EXIT){
-        var opcode = memory[ip];
-        
-        if(opcode > 30){
-            //handle opcodes over 30
-        } else {
-            if(opcode === 0){ 
-                //nop
-            } else if (opcode === 1){
-                //lit
-                ip += 1;
-                stack.append(memory[ip]);
-            } else if (opcode === 2){
-                //dup
-                stack.append(stack[-1]);
-            }
-        }
-    }
 }
 
 function dump(stack,address,memory){
