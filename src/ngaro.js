@@ -111,12 +111,12 @@ for ( var i = 0; i < 64; ++i )
 **********************************************************************/
 var interval;
 var frequency;
-var cycles;
 var RUNNING = false;
 var WAITING = false; // awaiting keyboard input
 //  TODO : this is a delay, not a frequency
 var DEFAULT_FREQUENCY = 25;
 var DEFAULT_CYCLES = 50000;
+var cycles = DEFAULT_CYCLES;
 
 function rxStartVM()
 {
@@ -317,8 +317,8 @@ var portHandlers = new Array(64); // array of functions
 ram.image   = new Int32Array( IMAGE_SIZE );
 var vm = new Opcodes();
 
-function setImage(vmImageArray){
-    ram.image = new Int32Array(vmImageArray); 
+function setImage(newImage){
+    ram.image = newImage;
 }
 
 
@@ -436,11 +436,10 @@ function rxPrepareVM()
   data.reset();
   address.reset();
 
-  frequency = localStorage.getItem("rxFrequency") || DEFAULT_FREQUENCY;
-  cycles = localStorage.getItem("rxCycles") || DEFAULT_CYCLES;
-
   if ( WEB_CONTEXT )
   {
+    frequency = localStorage.getItem("rxFrequency") || DEFAULT_FREQUENCY;
+    cycles = localStorage.getItem("rxCycles") || DEFAULT_CYCLES;
     document.getElementById("frequency").value = frequency;
     document.getElementById("cycles").value = cycles;
   }
@@ -675,8 +674,9 @@ function handleDevices()
 
 function processOpcode()
 {
+  if ( ip >= ram.image.length ) {  return; }
   var op = ram.image[ip];
-
+  
   if (op > vm.WAIT)
   {
     address.push(ip);
@@ -894,8 +894,8 @@ function processOpcode()
     break;
 
     default :
+       console.log( "unrecognized opcode: " + op );
        debugger; // would only happen on negative numbers...
-       alert( "unrecognized opcode: " + op );
     break;
   }
   ip++;
@@ -1161,3 +1161,4 @@ exports.address = address;
 exports.data = data;
 exports.setImage = setImage;
 exports.rxProcessImage = rxProcessImage;
+exports.rxPrepareVM = rxPrepareVM;
