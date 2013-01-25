@@ -288,252 +288,6 @@ function rxProcessInput()
  * Functions for loading a saved image, saving the image, and restoring
  * to a clean image are here.
  **********************************************************************/
-
-function rxClearCanvas()
-{
-    ngterm.cls();
-}
-
-function rxHTTPLoadImage( url )
-{
-  this.MUL = 18;      this.DIVMOD = 19;     this.AND = 20;
-  this.OR = 21;       this.XOR = 22;        this.SHL = 23;
-  this.SHR = 24;      this.ZERO_EXIT = 25;  this.INC = 26;
-  this.DEC = 27;      this.IN = 28;         this.OUT = 29;
-  this.WAIT = 30;
-}
-
-
-
-/**********************************************************************
- * Internal registers, flags, and variables
- **********************************************************************/
-var ip = 0;
-var data    = new Stack(DATA_DEPTH);
-var address = new Stack(ADDRESS_DEPTH);
-var ports   = new Int32Array(64);
-var portHandlers = new Array(64); // array of functions
-
-ram.image   = new Int32Array( IMAGE_SIZE );
-var vm = new Opcodes();
-
-function setImage(newImage){
-    ram.image = newImage;
-}
-
-
-// start with no hardware attached.
-// ( devices are filled in below )
-//  TODO: move this loop to rxPrepareVM
-var doNothingHandler = function () { }
-for ( var i = 0; i < 64; ++i )
-{
-  portHandlers[ i ] = doNothingHandler;
-}
-
-
-
-/**********************************************************************
- * Control (and fine tuning) of the VM Processing
- *
- * Specifically, these routines will use form elements to alter the
- * number of instructions processed per cycle.
- *
- * This implementation has a timer, by default called every 75 ms. If
- * the prior run has not completed, it exits. Otherwise, it processes
- * a specific number of instructions (5000 by default) and then returns.
- *
- * A variable 'frequency' is used to set the number of times each second
- * that the processor runs. A second variable 'cycles' controls the
- * number of instructions processed per cycle.
- *
- * You can start or suspend execution with rxStartVM() and rxStopVM().
- * The state can be toggled via rxToggleVM().
-**********************************************************************/
-var interval;
-var frequency;
-var cycles;
-var RUNNING = false;
-var WAITING = false; // awaiting keyboard input
-//  TODO : this is a delay, not a frequency
-var DEFAULT_FREQUENCY = 25;
-var DEFAULT_CYCLES = 50000;
-
-function rxStartVM()
-{
-  interval = setInterval("rxProcessImage()", frequency);
-  run = 1;
-  tib += "  ";
-}
-
-function rxStopVM()
-{
-  clearInterval(interval);
-  interval = null;
-  run = 0;
-}
-
-function rxToggleVM()
-{
-  if (run == 0)
-  {
-    rxStartVM();
-    if ( WEB_CONTEXT )
-      document.getElementById("vmtoggle").value = "pause vm";
-  }
-  else
-  {
-    rxStopVM();
-    if ( WEB_CONTEXT )
-      document.getElementById("vmtoggle").value = "resume vm";
-  }
-}
-
-if ( WEB_CONTEXT )
-{
-  function rxSetInterval()
-  {
-    rxStopVM();
-    frequency = document.getElementById('frequency').value;
-    try
-    {
-      localStorage.setItem("rxFrequency", frequency);
-    }
-    catch (e)
-    {
-      alert("Sorry, but we couldn't save the frequency settings for later use.");
-    }
-    rxStartVM();
-  }
-
-  function rxSetCyclesPerInterval()
-  {
-    rxStopVM();
-    cycles = document.getElementById('cycles').value;
-    try
-    {
-      localStorage.setItem("rxCycles", cycles);
-    }
-    catch (e)
-    {
-      alert("Sorry, but we couldn't save the cycle settings for later   use.");
-    }
-    rxStartVM();
-  }
-}
-
-function rxPrepareVM()
-{
-  ip  = 0;
-  ports[0] = 0;
-  width = 0;
-  var i = 0;
-  while (i < 64)
-  {
-    ports[i] = 0;
-    i++;
-  }
-  data.reset();
-  address.reset();
-
-  if ( WEB_CONTEXT )
-  {
-    frequency = localStorage.getItem("rxFrequency") || DEFAULT_FREQUENCY;
-    cycles = localStorage.getItem("rxCycles") || DEFAULT_CYCLES;
-    document.getElementById("frequency").value = frequency;
-    document.getElementById("cycles").value = cycles;
-  }
-}
-
-
-
-/**********************************************************************
- * Keyboard Handling
- *
- * We have two approaches to handling the keyboard. The default is to
- * store a string containing input read from a text box, and extract
- * the characters from this. This is the "buffered" input model. The
- * alternate (and original method) uses a custom keyboard handler to
- * catch keystrokes and stores the most recent one in a variable.
- *
- * There are merits to both approaches. We use the buffered model as
- * the default as it works on more devices (tablets and phones without
- * a physical keyboard won't work with the non-buffered input).
- **********************************************************************/
-var inputMethod = 1;
-var lastKey = " ";
-var tib = "";
-
-
-function rxReadKeyboard(e)
-{
-  var uni = e.keyCode ? e.keyCode : e.charCode;
-  lastKey = uni;
-  if (uni == 8)
-    return false;
-  else {
-    WAITING = false;
-    ports[ 1 ] = uni;
-  }
-}
-
-
-// this version just uses the keyboard
-function kbdDirectMethod()
-{
-  WAITING = true;
-}
-
-// this version uses an html form
-function kbdWidgetMethod()
-{
-  var res = tib.charCodeAt( 0 );
-  tib = tib.substr(1, tib.length - 1);
-  lastKey = 0;
-  return res;
-}
-
-// set up the keyboard handler
-portHandlers[ 1 ] = kbdWidgetMethod;
-
-function rxToggleInputMethod()
-{
-  if ( inputMethod == 0 )
-  {
-    document.onkeypress = null;
-    inputMethod = 1;
-    portHandlers[ 1 ] = kbdWidgetMethod;
-  }
-  else
-  {
-    document.onkeypress = rxReadKeyboard;
-    inputMethod = 0;
-    portHandlers[ 1 ] = kbdDirectMethod;
-  }
-}
-
-function rxProcessInput()
-{
-  tib = tib + document.getElementById('tib').value + "  ";
-  document.getElementById('tib').value = "";
-}
-
-
-
-
-
-/**********************************************************************
- * Image Management
- *
- * Functions for loading a saved image, saving the image, and restoring
- * to a clean image are here.
- **********************************************************************/
-
-function rxClearCanvas()
-{
-    ngterm.cls();
-}
-
 function rxHTTPLoadImage( url )
 {
   WAITING = true;
@@ -598,7 +352,15 @@ function rxLoadCleanImage( url )
   rxStartVM();
 }
 
+function rxClearCanvas()
+{
+    ngterm.cls();
+}
 
+
+function setImage(newImage){
+    ram.image = newImage;
+}
 
 /**********************************************************************
  * Simulated Device Handlers
@@ -1156,9 +918,12 @@ if ( WEB_CONTEXT )
 }
 
 /* Exported modules */
-exports.ram = ram;
-exports.address = address;
-exports.data = data;
-exports.setImage = setImage;
-exports.rxProcessImage = rxProcessImage;
-exports.rxPrepareVM = rxPrepareVM;
+if (typeof exports != 'undefined')
+{
+  exports.ram = ram;
+  exports.address = address;
+  exports.data = data;
+  exports.setImage = setImage;
+  exports.rxProcessImage = rxProcessImage;
+  exports.rxPrepareVM = rxPrepareVM;
+}
