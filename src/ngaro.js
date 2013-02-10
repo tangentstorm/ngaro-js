@@ -5,8 +5,6 @@
  **********************************************************************/
 var WEB_CONTEXT = typeof document != "undefined";
 
-// variable for the image,address,and data
-var ram = { image : [] }; 
 
 /**********************************************************************
  * Some constants useful to us for dealing with the VM settings.
@@ -43,6 +41,13 @@ function Stack(size)
   this.inc   = function()  { this.data[this.sp]++; }
   this.dec   = function()  { this.data[this.sp]--; }
   this.reset = function()  { this.sp = 0; }
+
+  this.dump = function() {
+    var res = [ '[' ];
+    for( var i = 0; i <= this.sp; i++ ) res.push( this.data[ i ]);
+    res.push( '] ');
+    return res.join( ' ' );
+  }
 }
 
 
@@ -74,10 +79,8 @@ var data    = new Stack(DATA_DEPTH);
 var address = new Stack(ADDRESS_DEPTH);
 var ports   = new Int32Array(64);
 var portHandlers = new Array(64); // array of functions
-
-ram.image   = new Int32Array( IMAGE_SIZE );
+var ram = { image : new Int32Array( IMAGE_SIZE ) };
 var vm = new Opcodes();
-
 
 
 
@@ -307,6 +310,31 @@ function rxHTTPLoadImage( url )
   xhr.send( null );
 }
 
+// this is just the java string hashing algorithm applied to arrays
+function hashCode(ints)
+{
+      var hash = 0;
+      for (var i = 0; i < ints.length; i++)
+      {
+          if (isNaN( ints[ i ])) {
+             console.log("found NaN at position: " + i + ". exiting loop." );
+	     break;
+          }
+	  hash = ((hash<<5)-hash)+ints[ i ];
+      }
+      return hash.toString( 16 );
+}
+
+function hashes()
+{
+  console.log(
+    "m: ", hashCode( ram.image ), "  ",
+    "d: ", hashCode( data.data ), "  ",
+    "a: ", hashCode( address.data ), "  " );
+  // console.log( ports );
+}
+
+
 function rxLoadImage()
 {
   rxClearCanvas();
@@ -433,7 +461,11 @@ function handleDevices()
  * See "The Ngaro Virtual Machine" for details on the behavior of each
  * instruction.
  **********************************************************************/
-
+var TRACE = false;
+var log = []
+function traceback( msg ) {
+   if ( TRACE ) log.push( msg + " | ip: " + ip + " | addr: " + address.dump( ));
+}
 function processOpcode()
 {
   if ( ip >= ram.image.length ) {  return; }
@@ -445,6 +477,7 @@ function processOpcode()
     ip = op - 1;
     if (ram.image[ip + 1] == 0) ip++;
     if (ram.image[ip + 1] == 0) ip++;
+    traceback('entered');
   }
   else switch( op )
   {
@@ -501,6 +534,7 @@ function processOpcode()
       ip = address.pop();
       if (ram.image[ip + 1] == 0) ip++;
       if (ram.image[ip + 1] == 0) ip++;
+      traceback('returned');
     break;
 
     case vm.GT_JUMP :
