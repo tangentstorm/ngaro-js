@@ -881,7 +881,7 @@ if ( WEB_CONTEXT )
   {
     switch ( ports[ 8 ])
     {
-        case 1 : ngterm.cursto( data.pop(), data.pop() ); break;
+        case 1 : ngterm.xy( data.pop(), data.pop() ); break;
         case 2 : ngterm.fg( data.pop() ); break;
         case 3 : ngterm.bg( data.pop() ); break;
         default: // ignore

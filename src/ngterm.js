@@ -95,6 +95,17 @@ var term,
 
     Term.prototype = {
 
+        fg: function( n ) {
+            this.foreground = n;
+        },
+        bg: function( n ) {
+            this.background = n;
+        },
+        xy: function( x, y ) {
+            this.column = x;
+            this.row = y;
+        },
+
         cls: function () {
             this.context.fillStyle = 'rgba( 0, 0, 0, 255 )'
             this.context.fillRect( 0, 0, this.canvas.width, this.canvas.height );
