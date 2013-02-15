@@ -411,8 +411,8 @@ function setImage(newImage){
 
 portHandlers[4] = function()
 {
-  ports[4] = 0;
-  saveImage();
+  rxSaveImage();
+  return 0;
 }
 
 portHandlers[5] = function()
@@ -439,6 +439,7 @@ portHandlers[5] = function()
 
     //case -15 : ports[5] = 1; break;
   }
+  return ports[ 5 ];
 }
 
 
@@ -857,7 +858,7 @@ portHandlers[6] = function()
     default:
       // do nothing
   }
-  ports[6] = 0;
+  return 0;
 }
 
 
@@ -872,7 +873,7 @@ if ( WEB_CONTEXT )
   portHandlers[2] = function()
   {
     ngterm.emit( data.pop() );
-    ports[ 2 ] = 0;
+    return 0;
   }
 
   // enhanced text:
@@ -885,7 +886,7 @@ if ( WEB_CONTEXT )
         case 3 : ngterm.bg( data.pop() ); break;
         default: // ignore
     }
-    ports[ 8 ] = 0;
+    return 0;
   }
 }
 
