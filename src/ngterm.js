@@ -62,6 +62,11 @@ var term,
         this.row        = 1;
         this.scrollback = 0;
 
+        // override this to draw a cursor
+        this.onCurse = function (x, y) { };
+
+
+
         // buffer to hold a character as its being drawn
         this.charw = 8
         this.charh = 16
@@ -175,6 +180,7 @@ var term,
                        this.column++;
                     }
             }
+            this.onCurse( this.column, this.row );
         },
 
         transparent : function( yn )
