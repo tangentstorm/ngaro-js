@@ -224,24 +224,17 @@ function rxPrepareVM()
  * a physical keyboard won't work with the non-buffered input).
  **********************************************************************/
 var inputMethod = 1;
-var lastKey = " ";
 var tib = "";
-
 
 function rxReadKeyboard(e)
 {
-  var uni = e.keyCode ? e.keyCode : e.charCode;
-  lastKey = uni;
-  if (uni == 8)
-    return false;
-  else {
-    WAITING = false;
-    ports[ 1 ] = uni;
-  }
+  ports[ 1 ] = e.keyCode ? e.keyCode : e.charCode;
+  e.preventDefault(); // all keys go to the terminal
+  WAITING = false;
 }
 
-
-// this version just uses the keyboard
+// this is a port handler, but we don't return a value because
+// the whole vm pauses until the next keypress.
 function kbdDirectMethod()
 {
   WAITING = true;
@@ -252,7 +245,6 @@ function kbdWidgetMethod()
 {
   var res = tib.charCodeAt( 0 );
   tib = tib.substr(1, tib.length - 1);
-  lastKey = 0;
   return res;
 }
 
