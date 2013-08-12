@@ -35,9 +35,9 @@ function Stack(size)
   this.dup   = function()  { this.push(this.tos()); }
   this.drop  = function()  { this.sp--; }
   this.swap  = function()  { var a = this.nos();
-                             this.data[this.sp - 1] = this.tos();
-                             this.data[this.sp] = a;
-                           }
+			     this.data[this.sp - 1] = this.tos();
+			     this.data[this.sp] = a;
+			   }
   this.inc   = function()  { this.data[this.sp]++; }
   this.dec   = function()  { this.data[this.sp]--; }
   this.reset = function()  { this.sp = 0; }
@@ -224,20 +224,27 @@ function rxPrepareVM()
  * a physical keyboard won't work with the non-buffered input).
  **********************************************************************/
 var inputMethod = 1;
+var kbdQueue = []; // queue for direct input
 var tib = "";
 
-function rxReadKeyboard(e)
+// this is the javascript event handler for the direct method
+function rxReadKeyboard(e, special)
 {
-  ports[ 1 ] = e.keyCode ? e.keyCode : e.charCode;
+  var code = e.keyCode ? e.keyCode : e.charCode;
+  if (special) code -= 64;
   e.preventDefault(); // all keys go to the terminal
-  WAITING = false;
+  if (WAITING) {
+      ports[1] = code;
+      WAITING = false;
+  } else kbdQueue.push(code);
+  return false;
 }
 
-// this is a port handler, but we don't return a value because
-// the whole vm pauses until the next keypress.
+// this is the port handler for the direct method
 function kbdDirectMethod()
 {
-  WAITING = true;
+  if (kbdQueue.length > 0) ports[1] = kbdQueue.shift();
+  else WAITING = true;
 }
 
 // this version uses an html form
@@ -255,13 +262,24 @@ function rxToggleInputMethod()
 {
   if ( inputMethod == 0 )
   {
-    document.onkeypress = null;
+    document.onkeypress = document.onkeydown = document.onkeyup = null;
     inputMethod = 1;
     portHandlers[ 1 ] = kbdWidgetMethod;
   }
   else
   {
     document.onkeypress = rxReadKeyboard;
+    document.onkeyup = function (e) {
+	e.preventDefault();
+	return false;
+    }
+    document.onkeydown = function (e) {
+	// 17 == control key
+	if (e.ctrlKey && e.keyCode !== 17) {
+	    rxReadKeyboard(e, true);
+	    return false;
+	}
+    }
     inputMethod = 0;
     portHandlers[ 1 ] = kbdDirectMethod;
   }
@@ -308,10 +326,10 @@ function hashCode(ints)
       var hash = 0;
       for (var i = 0; i < ints.length; i++)
       {
-          if (isNaN( ints[ i ])) {
-             console.log("found NaN at position: " + i + ". exiting loop." );
+	  if (isNaN( ints[ i ])) {
+	     console.log("found NaN at position: " + i + ". exiting loop." );
 	     break;
-          }
+	  }
 	  hash = ((hash<<5)-hash)+ints[ i ];
       }
       return hash.toString( 16 );
@@ -463,7 +481,7 @@ function processOpcode()
 {
   if ( ip >= ram.image.length ) {  return; }
   var op = ram.image[ip];
-  
+
   if (op > vm.WAIT)
   {
     address.push(ip);
@@ -506,13 +524,13 @@ function processOpcode()
       data.dec();
       if (data.tos() != 0)
       {
-        ip++;
-        ip = ram.image[ip] - 1;
+	ip++;
+	ip = ram.image[ip] - 1;
       }
       else
       {
-        ip++;
-        data.drop();
+	ip++;
+	data.drop();
       }
     break;
 
@@ -533,7 +551,7 @@ function processOpcode()
     case vm.GT_JUMP :
       ip++;
       if (data.nos() > data.tos())
-        ip = ram.image[ip] - 1;
+	ip = ram.image[ip] - 1;
       data.drop();
       data.drop();
     break;
@@ -541,7 +559,7 @@ function processOpcode()
     case vm.LT_JUMP :
       ip++;
       if (data.nos() < data.tos())
-        ip = ram.image[ip] - 1;
+	ip = ram.image[ip] - 1;
       data.drop();
       data.drop();
     break;
@@ -549,7 +567,7 @@ function processOpcode()
     case vm.NE_JUMP :
       ip++;
       if (data.nos() != data.tos())
-        ip = ram.image[ip] - 1;
+	ip = ram.image[ip] - 1;
       data.drop();
       data.drop();
     break;
@@ -557,7 +575,7 @@ function processOpcode()
     case vm.EQ_JUMP :
       ip++;
       if (data.nos() == data.tos())
-        ip = ram.image[ip] - 1;
+	ip = ram.image[ip] - 1;
       data.drop();
       data.drop();
     break;
@@ -596,27 +614,27 @@ function processOpcode()
       var a = data.pop();
       if (b == 0)
       {
-        ip = 0;
-        data.sp = 0;
-        address.sp = 0;
+	ip = 0;
+	data.sp = 0;
+	address.sp = 0;
       }
       else
       {
-        var x = Math.abs(b);
-        var y = Math.abs(a);
-        var q = Math.floor(y / x);
-        var r = y % x;
-        if (a < 0 && b < 0)
-          r = r * -1;
-        if (a > 0 && b < 0)
-          q = q * -1;
-        if (a < 0 && b > 0)
-        {
-          r = r * -1;
-          q = q * -1;
-        }
-        data.push(r);
-        data.push(q);
+	var x = Math.abs(b);
+	var y = Math.abs(a);
+	var q = Math.floor(y / x);
+	var r = y % x;
+	if (a < 0 && b < 0)
+	  r = r * -1;
+	if (a > 0 && b < 0)
+	  q = q * -1;
+	if (a < 0 && b > 0)
+	{
+	  r = r * -1;
+	  q = q * -1;
+	}
+	data.push(r);
+	data.push(q);
       }
     break;
 
@@ -653,8 +671,8 @@ function processOpcode()
     case vm.ZERO_EXIT :
       if (data.tos() == 0)
       {
-        data.drop();
-        ip = address.pop();
+	data.drop();
+	ip = address.pop();
       }
     break;
 
@@ -873,10 +891,10 @@ if ( WEB_CONTEXT )
   {
     switch ( ports[ 8 ])
     {
-        case 1 : ngterm.xy( data.pop(), data.pop() ); break;
-        case 2 : ngterm.fg( data.pop() ); break;
-        case 3 : ngterm.bg( data.pop() ); break;
-        default: // ignore
+	case 1 : ngterm.xy( data.pop(), data.pop() ); break;
+	case 2 : ngterm.fg( data.pop() ); break;
+	case 3 : ngterm.bg( data.pop() ); break;
+	default: // ignore
     }
     return 0;
   }
